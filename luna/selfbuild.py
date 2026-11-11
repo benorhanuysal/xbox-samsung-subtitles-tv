@@ -21,13 +21,18 @@ GEMINI_BEKLE = 1.0  # oyunda Gemini cogunlukla 0,7-1,1 sn; Google ~0,4 sn
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
+ONBELLEK_BOYUT = 2000  # saklanan en fazla ceviri (Luna kapaninca silinir)
 # Luna'daki komuta her zaman eklenir. Oyunda gorulen hatalar: "you'd appreciate a call" -> "ararsan memnun olursun"
 # (kim kimi ariyor ters), iki satira bolunen cumlenin ilk yarisinin nokta ile bitirilmesi, sen/siz karisikligi.
 EK_KURAL = (
     "Address the listener informally (in Turkish always 'sen', never 'siz'). "
     "Keep who does what to whom exactly as in the original (e.g. receiving a call vs. making one). "
     "Game subtitles often split one sentence over two lines: if the input does not end with . ! ? or ..., "
-    "translate it as an unfinished fragment that the next line will complete, and do not add a period."
+    "translate it as an unfinished fragment that the next line will complete, and do not add a period. "
+    "Translate idioms and slang by meaning, never word by word. Examples: "
+    "'You got this' = 'Halledersin'; 'You got it' = 'Tamamdır'; 'bring home the bread' = 'parayı kap gel'; "
+    "'you'd appreciate a call' = 'aranmaktan memnun olursun'; 'Cut out the painting' = 'Tabloyu çerçevesinden kesip çıkar'; "
+    "'Leave the vault' = 'Kasa odasından çık'; 'This is it!' = 'İşte bu!'."
 )
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "altyazi_ceviri.log")
 
@@ -73,10 +78,32 @@ class _Is(threading.Thread):
             self.hata = e
 
 
+def _anahtar(metin):
+    return " ".join(metin.lower().split())
+
+
 class TS(basetrans):
     def init(self):
         self.baglam = deque(maxlen=BAGLAM_SAYISI)
         self.gemini_kapali_bitis = 0.0
+        # Gorev cumleleri ("Go to the computer.") defalarca tekrar ediyor: Gemini cevirisi saklanir,
+        # tekrarinda aninda ve hep ayni ceviri gelir. Gemini gec kalip Google kullanilsa bile Gemini'nin
+        # gec gelen cevabi da saklanir; ayni satir bir daha gelirse Google'in hatali/"siz"li cevirisi yerine o gider.
+        self.onbellek = {}
+        self.kilit = threading.Lock()
+
+    def _sakla(self, metin, ceviri):
+        with self.kilit:
+            self.onbellek[_anahtar(metin)] = ceviri
+            while len(self.onbellek) > ONBELLEK_BOYUT:
+                self.onbellek.pop(next(iter(self.onbellek)))
+
+    def _gec_gemini_sakla(self, gemini, metin):
+        def bekle():
+            gemini.join(15)
+            if gemini.sonuc and _latin_mi(gemini.sonuc):
+                self._sakla(metin, gemini.sonuc)
+        threading.Thread(target=bekle, daemon=True).start()
 
     def _gemini_ayar(self):
         try:
@@ -128,6 +155,12 @@ class TS(basetrans):
         if not metin:
             return ""
         t0 = time.time()
+        with self.kilit:
+            hazir = self.onbellek.get(_anahtar(metin))
+        if hazir:
+            self.baglam.append((metin, hazir))
+            _gunluk("onbellek", (time.time() - t0) * 1000, metin, hazir)
+            return hazir
         gemini_var = self._gemini_ayar() is not None
         gemini = _Is(self._gemini, metin) if gemini_var and time.time() >= self.gemini_kapali_bitis else None
         google = _Is(self._google, metin)
@@ -136,6 +169,7 @@ class TS(basetrans):
             gemini.join(GEMINI_BEKLE)
             if gemini.sonuc and _latin_mi(gemini.sonuc):
                 self.baglam.append((metin, gemini.sonuc))
+                self._sakla(metin, gemini.sonuc)
                 _gunluk("gemini", (time.time() - t0) * 1000, metin, gemini.sonuc)
                 return gemini.sonuc
             if gemini.sonuc:
@@ -143,6 +177,7 @@ class TS(basetrans):
                 gemini = None  # bu sonucu asagida da kullanma
             elif gemini.hata is None and gemini.is_alive():
                 neden = "gecikti"
+                self._gec_gemini_sakla(gemini, metin)
             elif isinstance(gemini.hata, _HTTPHata):
                 neden = "HTTP %d" % gemini.hata.kod
             else:
