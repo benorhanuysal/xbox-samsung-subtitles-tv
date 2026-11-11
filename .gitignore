@@ -1,0 +1,26 @@
+# Tizen derleme ciktilari
+.buildResult/
+*.wgt
+.sign/
+.project
+.tproject
+
+# Kisisel: TV IP'si, sertifika, sifre, API anahtari ASLA repoya girmez
+scripts/tv_ip.txt
+*.p12
+*.pwd
+*.pri
+*.csr
+*.crt
+device-profile.xml
+*sifre*.txt
+*key*.txt
+*.log
+
+# Telifli oyun ekran goruntuleri onizleme icin yerelde kalir
+tools/arka.png
+docs/private/
+
+# Python onbellegi (yerel yol icerir)
+__pycache__/
+*.pyc

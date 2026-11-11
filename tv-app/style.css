@@ -1,0 +1,105 @@
+/* Noto Sans (SIL OFL 1.1, fonts/OFL.txt) uygulamaya gomulu: TV'nin kendi fontunda
+   s, g, i (noktasiz) gibi Turkce harfler yoksa baska fonttan gelip bozuk gorunuyordu. */
+@font-face {
+  font-family: "Altyazi"; font-weight: 600;
+  src: url("fonts/noto-sans-latin-600.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: "Altyazi"; font-weight: 600;
+  src: url("fonts/noto-sans-latin-ext-600.woff2") format("woff2");
+  unicode-range: U+0100-0130, U+0132-024F, U+1E00-1EFF;
+}
+@font-face {
+  font-family: "Altyazi"; font-weight: 700;
+  src: url("fonts/noto-sans-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: "Altyazi"; font-weight: 700;
+  src: url("fonts/noto-sans-latin-ext-700.woff2") format("woff2");
+  unicode-range: U+0100-0130, U+0132-024F, U+1E00-1EFF;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  width: 1920px; height: 1080px;
+  overflow: hidden;
+  /* HDMI goruntusu uygulamanin ARKASINDA, o yuzden arka plan seffaf olmali */
+  background: transparent;
+  font-family: "Altyazi", "SamsungOne", sans-serif;
+}
+
+.gizli { display: none !important; }
+
+#altyazi {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 70px;
+  text-align: center;
+  pointer-events: none;
+}
+/* GTA'nin kendi Ingilizce altyazisinin (1080p'de y~940-1010) hemen USTUNDE durur.
+   Kutu yok: beyaz yazi + siyah dis cizgi + yumusak golge, oyunun altyazi stiline yakin. */
+#altyazi { font-size: 40px; }
+.satir {
+  display: table;
+  margin: 2px auto 0;
+  max-width: 1500px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.2px;
+  text-shadow:
+    -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+    0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000,
+    0 3px 8px rgba(0, 0, 0, 0.85);
+  transition: opacity 0.5s;
+}
+/* Bir onceki cumle: ustte, biraz kucuk ve soluk */
+.satir.eski { opacity: 0.6; font-size: 0.78em; font-weight: 600; }
+.satir.sonuyor { opacity: 0; }
+
+#durum {
+  position: absolute;
+  top: 30px; right: 40px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 26px;
+  transition: opacity 0.6s;
+}
+
+#ayarlar {
+  position: absolute;
+  top: 200px; left: 460px;
+  width: 1000px;
+  padding: 30px 40px;
+  border-radius: 16px;
+  background: rgba(15, 20, 30, 0.95);
+  color: #fff;
+  font-size: 30px;
+}
+#ayarlar h2 { margin-top: 0; color: #ffd84a; }
+#ipKutusu {
+  font-size: 64px;
+  font-family: monospace;
+  padding: 10px 20px;
+  background: #222;
+  border: 3px solid #ffd84a;
+  border-radius: 10px;
+  min-height: 80px;
+}
+.kucuk { font-size: 24px; color: #aaa; }
+
+#yardim {
+  position: absolute;
+  top: 30px; left: 40px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 24px;
+}
