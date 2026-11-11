@@ -21,7 +21,7 @@ Yeni bir oyunda çalıştırdıysan, başkaları uğraşmasın:
 2. Doldur: **okuma bölgesi oran olarak** (her ekran çözünürlüğünde çalışsın), TV'deki altyazı konumu, varsa Gemini komutu, notlar. Örnek: [`oyunlar/gta-v.md`](oyunlar/gta-v.md).
 3. PR gönder. Git bilmiyorsan **Issues → "Oyun ayarı paylaş"** formunu doldur, biz ekleriz.
 
-Oranı hesaplamak: LunaTranslator'da seçtiğin bölgenin piksel değerlerini ekran genişliğine/yüksekliğine böl (ör. `455 / 1920 = 0.237`).
+Oranı hesaplamak: LunaTranslator'da seçtiğin bölgenin piksel değerlerini ekran genişliğine/yüksekliğine böl (ör. `260 / 1920 = 0.135`).
 
 ## 🐞 Hata bildirmek
 **Issues → "Hata bildir"** formunu kullan. Şunlar çok yardımcı olur:

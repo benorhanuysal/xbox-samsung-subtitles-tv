@@ -11,10 +11,10 @@ Uzaktan oynatma **tam ekranda**, ekran oranına göre (sol, üst, genişlik, yü
 
 | | sol | üst | genişlik | yükseklik |
 |---|---|---|---|---|
-| Oran | 0.237 | 0.813 | 0.520 | 0.156 |
-| 1920×1080 | 455 | 878 | 999 | 168 |
+| Oran | 0.135 | 0.813 | 0.729 | 0.156 |
+| 1920×1080 | 260 | 878 | 1400 | 168 |
 
-Mini harita (sol alt) ve görev/takım bilgisi (sağ alt) bölgenin dışında kalmalı. Araç plakaları bölgeye girebilir; `mypost.py` onları eler.
+GTA Online diyalogları uzun; daha dar bölge satırın başını/sonunu keser. Mini harita (sol alt) bölgenin dışında kalmalı. Araç plakaları bölgeye girebilir; `mypost.py` onları eler.
 
 ## TV'de altyazı konumu
 `bottom: 150px`, yazı **40px** (uygulamanın varsayılanı). Türkçe, GTA'nın İngilizce altyazısının (1080p'de y ≈ 940–1010) hemen üstünde durur.

@@ -14,10 +14,19 @@ _kucuk = re.compile(r"[a-z]")
 _kelime = re.compile(r"[A-Za-z][A-Za-z'\-]*")
 # Mesafe (1.2mi, 300m), saat (12:45), para ($25,000): harita/HUD yazilari
 _hud = re.compile(r"\d+(?:[.,]\d+)?\s?(?:mi|km|m|ft)\b|\b\d{1,2}:\d{2}\b|\$\s?\d", re.I)
+# Oyuncu/gamertag adlari (parker994, YT55, A7md256Y) ve sokak adi ayiraci "|"
+_etiket = re.compile(r"[A-Za-z]+\d{2,}|[A-Za-z]\d[A-Za-z]|\|")
+# Kaynak Ingilizce: bu harfler varsa metin zaten Turkce (Xbox bildirimi, baska pencere)
+_turkce = re.compile(r"[ğĞışŞİ]")
+# Harflerin cogu BUYUK ise tabela/baslik ("CASINO & RESORT", "... INVITED")
+MAX_BUYUK_ORANI = 0.5
 
 
 def _diyalog_mu(satir):
-    if _hud.search(satir):
+    if _hud.search(satir) or _etiket.search(satir) or _turkce.search(satir):
+        return False
+    buyuk = len(re.findall(r"[A-Z]", satir))
+    if buyuk > MAX_BUYUK_ORANI * max(1, len(_harf.findall(satir))):
         return False
     harfler = len(_harf.findall(satir))
     if harfler < MIN_HARF:

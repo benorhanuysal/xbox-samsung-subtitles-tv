@@ -20,7 +20,7 @@ Xbox Series X/S ──HDMI──► Samsung TV (Tizen)
                                             └─ LunaTranslator
                                                • Windows 11 OCR ile altyazı şeridini okur (~70 ms)
                                                • altyazı filtresi: plaka, tabela, HUD yazılarını atar
-                                               • çeviri: Gemini + Google yarışır (≤1,5 sn)
+                                               • çeviri: Gemini + Google yarışır (≤1 sn)
                                                • ws://PC_IP:2333/api/ws/text/trans
 ```
 
@@ -93,7 +93,7 @@ ben gireceğim. Bitince Xbox uzaktan oynatma + LunaTranslator + TV uygulamasıyl
 | Metin girdi / Text Input | **OCR** |
 | OCR motoru | **SnippingTool** (Windows 11 OCR — hızlı ve doğru) |
 | OCR menzilini seç / Select OCR Region | Oyundaki **altyazı şeridi** (ekranın alt ortası; mini harita ve sağ alt HUD hariç) |
-| Otomatik çalışma metodu / Automated Execution Method | **Periyodik çalışma**, İşletim döngüsü **0,5 sn** |
+| Otomatik çalışma metodu / Automated Execution Method | **Periyodik çalışma**, İşletim döngüsü **0,3 sn** |
 | Metin işleme → **Özel Python işleme** / Custom Python Processing | **Açık** (`mypost.py`) |
 | Çeviri: **Özel çevirim** / Custom Translation | **Açık**; diğer tüm çeviriciler **kapalı** (yoksa TV'ye her cümle iki kez gider) |
 | Ağ servisleri / Network Service | **Açık**, port **2333** |
@@ -174,10 +174,10 @@ Teşekkürler: [LunaTranslator](https://github.com/HIllya51/LunaTranslator) (OCR
 
 ## English
 
-**Live translated subtitles for Xbox games on a Samsung (Tizen) TV.** You play directly on the TV over HDMI with zero added latency. The PC reads the game's English subtitles through Xbox Remote Play using LunaTranslator (Windows 11 OCR), translates them (Gemini and Google Translate race; the first good result within 1.5 s wins), and streams the text over a local WebSocket to a small Tizen web app. The app shows the HDMI input full-screen *behind* itself (`tizen.tvwindow`, `BEHIND`) and draws the translation just above the game's own subtitle. Tested with GTA V on Xbox Series X and a 2021 Samsung QN90A; built with GTA VI in mind. Translation target is Turkish by default; change `KAYNAK_DIL` / `HEDEF_DIL` / `HEDEF_DIL_ADI` in `luna/selfbuild.py` for other languages.
+**Live translated subtitles for Xbox games on a Samsung (Tizen) TV.** You play directly on the TV over HDMI with zero added latency. The PC reads the game's English subtitles through Xbox Remote Play using LunaTranslator (Windows 11 OCR), translates them (Gemini and Google Translate race; the first good result within 1 s wins), and streams the text over a local WebSocket to a small Tizen web app. The app shows the HDMI input full-screen *behind* itself (`tizen.tvwindow`, `BEHIND`) and draws the translation just above the game's own subtitle. Tested with GTA V on Xbox Series X and a 2021 Samsung QN90A; built with GTA VI in mind. Translation target is Turkish by default; change `KAYNAK_DIL` / `HEDEF_DIL` / `HEDEF_DIL_ADI` in `luna/selfbuild.py` for other languages.
 
 **Quick setup:** download the repo and run **`KUR.bat`** — it installs the Tizen SDK and Samsung certificate extension, downloads and fully configures LunaTranslator, adds the firewall rule, connects to the TV, opens Certificate Manager and deploys the app. You only enable Developer Mode on the TV, approve Windows prompts and sign in to your Samsung account. Re-running is safe (finished steps are skipped). With an AI coding assistant, paste the prompt from the Turkish section above.
 
-Manual setup in short: enable TV Developer Mode → install Tizen SDK CLI + Samsung Certificate Extension → create a **Samsung** certificate profile named `AltyaziTV` (on non-English Windows, launch Certificate Manager with `-Duser.language=en`; `scripts\2_tv_bagla_ve_sertifika.bat` does this) → `scripts\3_paketle_ve_tvye_yukle.bat` → copy `luna/*.py` into LunaTranslator's `userconfig` and configure LunaTranslator as in the table above (OCR: SnippingTool, 0.5 s period, Custom Python Processing on, Custom Translation as the only translator, Network Service on port 2333) → allow TCP 2333 in Windows Firewall → open the app on the TV and enter the PC's IP with the RED button.
+Manual setup in short: enable TV Developer Mode → install Tizen SDK CLI + Samsung Certificate Extension → create a **Samsung** certificate profile named `AltyaziTV` (on non-English Windows, launch Certificate Manager with `-Duser.language=en`; `scripts\2_tv_bagla_ve_sertifika.bat` does this) → `scripts\3_paketle_ve_tvye_yukle.bat` → copy `luna/*.py` into LunaTranslator's `userconfig` and configure LunaTranslator as in the table above (OCR: SnippingTool, 0.3 s period, Custom Python Processing on, Custom Translation as the only translator, Network Service on port 2333) → allow TCP 2333 in Windows Firewall → open the app on the TV and enter the PC's IP with the RED button.
 
 Not affiliated with Microsoft, Samsung, Rockstar Games or LunaTranslator. MIT licensed.

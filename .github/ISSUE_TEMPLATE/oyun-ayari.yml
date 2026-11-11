@@ -26,7 +26,7 @@ body:
     attributes:
       label: LunaTranslator okuma bölgesi ve ekran çözünürlüğün
       description: Luna'da seçtiğin bölge (sol, üst, genişlik, yükseklik) ve ekranın; oranı biz hesaplarız.
-      placeholder: "455, 878, 999, 168 — ekran 1920x1080"
+      placeholder: "260, 878, 1400, 168 — ekran 1920x1080"
     validations:
       required: true
   - type: input

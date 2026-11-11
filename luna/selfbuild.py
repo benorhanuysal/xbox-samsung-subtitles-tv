@@ -17,7 +17,7 @@ from myutils.config import translatorsetting
 KAYNAK_DIL = "en"
 HEDEF_DIL = "tr"
 HEDEF_DIL_ADI = "Turkish"  # Gemini'ye "yalnizca bu dilde yaz" kurali icin
-GEMINI_BEKLE = 1.5
+GEMINI_BEKLE = 1.0  # oyunda Gemini cogunlukla 0,7-1,1 sn; Google ~0,4 sn
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
