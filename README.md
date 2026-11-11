@@ -138,6 +138,7 @@ Anahtarı **faturalandırması kapalı** bir projede oluştur ki ücretsiz katma
 | Çeviri hangi motordan geldi? | `LunaTranslator\userconfig\altyazi_ceviri.log` |
 
 ## Başka oyun / başka dil
+- **Hazır oyun ayarları:** [`oyunlar/`](oyunlar/) klasörü (şu an: [GTA V](oyunlar/gta-v.md)). Senin oyunun yoksa ekle; aşağıya bak.
 - **Okuma bölgesi:** Luna'da oyunun altyazı şeridine göre seç.
 - **TV'de konum:** YUKARI/AŞAĞI ile Türkçeyi oyunun altyazısının hemen üstüne getir.
 - **Dil:** `luna/selfbuild.py` başındaki `KAYNAK_DIL`, `HEDEF_DIL`, `HEDEF_DIL_ADI`; Latin alfabesi olmayan diller için `_latin_mi` kontrolünü kaldır.
@@ -152,6 +153,15 @@ scripts/  kurulum.ps1, güvenlik duvarı, TV bağlantısı + sertifika, paketle-
 ```
 
 Gemini anahtarı repoda **yok**: `selfbuild.py` herkesin kendi bilgisayarındaki LunaTranslator ayarlarından okur. Katkı gönderirken IP adresi, sertifika dosyası ya da API anahtarı eklemeyin.
+
+## Katkıda bulun
+En değerli katkı **yeni bir oyunun ayarı**: okuma bölgesi, TV'deki altyazı konumu, çeviri komutu. GTA VI çıktığında ilk ayarı paylaşan sen ol 🙂
+
+- 🎮 **Oyun ayarı:** [`oyunlar/SABLON.md`](oyunlar/SABLON.md) ile PR gönder ya da git bilmiyorsan **Issues → "Oyun ayarı paylaş"** formunu doldur.
+- 🐞 **Hata:** **Issues → "Hata bildir"**.
+- 💻 **Kod:** fork → değişiklik → TV'de/Luna'da dene → Pull Request.
+
+Ayrıntılar ve kod kuralları: [CONTRIBUTING.md](CONTRIBUTING.md). **Hiçbir yere API anahtarı, IP adresi, sertifika dosyası ya da TV DUID'i koyma.**
 
 ## Uyarı
 Resmî bir proje değildir; Microsoft/Xbox, Samsung, Rockstar Games ya da LunaTranslator ile bağlantısı yoktur. Oyuna müdahale etmez, yalnızca PC'deki uzaktan oynatma görüntüsünü okur; yine de çevrim içi oyunlarda kullanım sorumluluğu sana aittir. Gemini kullanıyorsan Google'ın kullanım koşulları ve kotaları geçerlidir.

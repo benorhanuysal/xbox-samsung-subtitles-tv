@@ -1,0 +1,46 @@
+name: 🎮 Oyun ayarı paylaş
+description: Yeni bir oyunda çalıştırdın; okuma bölgesini ve ayarları paylaş (git bilmeden)
+labels: ["oyun-ayari"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Teşekkürler! Bu bilgiyle `oyunlar/` klasörüne bir ayar dosyası ekleyeceğiz.
+        Örnek: [oyunlar/gta-v.md](../blob/main/oyunlar/gta-v.md)
+  - type: input
+    id: oyun
+    attributes:
+      label: Oyun ve konsol
+      placeholder: "Red Dead Redemption 2, Xbox Series S"
+    validations:
+      required: true
+  - type: dropdown
+    id: durum
+    attributes:
+      label: Durum
+      options: ["✅ Çalışıyor", "⚠️ Kısmen çalışıyor", "❌ Çalışmıyor"]
+    validations:
+      required: true
+  - type: input
+    id: bolge
+    attributes:
+      label: LunaTranslator okuma bölgesi ve ekran çözünürlüğün
+      description: Luna'da seçtiğin bölge (sol, üst, genişlik, yükseklik) ve ekranın; oranı biz hesaplarız.
+      placeholder: "455, 878, 999, 168 — ekran 1920x1080"
+    validations:
+      required: true
+  - type: input
+    id: oyun-ayari
+    attributes:
+      label: Oyunda altyazıyı açan ayar
+      placeholder: "Ayarlar > Ekran > Altyazılar: Açık"
+  - type: textarea
+    id: komut
+    attributes:
+      label: Gemini komutu (kullandıysan)
+      render: text
+  - type: textarea
+    id: notlar
+    attributes:
+      label: Notlar
+      description: Filtre sorunları, TV'deki altyazı konumu, ipuçları. İstersen ekran görüntüsü (kişisel bilgi olmadan).

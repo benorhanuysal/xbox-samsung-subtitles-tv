@@ -1,0 +1,47 @@
+name: 🐞 Hata bildir
+description: Kurulumda ya da kullanırken bir şey çalışmıyor
+labels: ["hata"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Önce README'deki **Sorun giderme** tablosuna bak.
+        ⚠️ API anahtarı, IP adresi, sertifika dosyası/şifresi, TV DUID'i **paylaşma**.
+  - type: dropdown
+    id: adim
+    attributes:
+      label: Nerede takıldın?
+      options:
+        - KUR.bat / kurulum
+        - Tizen SDK / Samsung sertifikası
+        - TV uygulaması (yükleme / görüntü / altyazı)
+        - LunaTranslator (OCR / filtre / çeviri)
+        - TV ile PC bağlantısı
+        - Diğer
+    validations:
+      required: true
+  - type: textarea
+    id: ne-oldu
+    attributes:
+      label: Ne oldu, ne bekliyordun?
+      description: Hata mesajını ya da KUR.bat çıktısını yapıştır (kişisel bilgileri sil).
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows sürümü ve dili
+      placeholder: "Windows 11 24H2, Türkçe"
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: TV modeli
+      placeholder: "Samsung QN90A (2021)"
+  - type: input
+    id: oyun
+    attributes:
+      label: Konsol ve oyun
+      placeholder: "Xbox Series X, GTA V"
