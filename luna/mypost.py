@@ -6,6 +6,9 @@ import re
 # Satir en az bu kadar kelime ve harf icermeli (tabela, arac adi, "Grove St." gibi kirintilar elensin)
 MIN_KELIME = 3
 MIN_HARF = 10
+# . ! ? ile biten kisa replikler ("Shut up!", "Get in.") icin daha dusuk sinir
+MIN_KELIME_CUMLE = 2
+MIN_HARF_CUMLE = 6
 # Harflerin, bosluk haric karakterlere orani (HUD, sayi, para, sembol yiginlarini eler)
 MIN_HARF_ORANI = 0.7
 
@@ -20,18 +23,34 @@ _etiket = re.compile(r"[A-Za-z]+\d{2,}|[A-Za-z]\d[A-Za-z]|\|")
 _turkce = re.compile(r"[ğĞışŞİ]")
 # Harflerin cogu BUYUK ise tabela/baslik ("CASINO & RESORT", "... INVITED")
 MAX_BUYUK_ORANI = 0.5
+# PC'deki baska pencerelerin yazilari (okuma bolgesinin ustune gelirse)
+_pc = re.compile(r"ctrl\s*esc|unfocus|Queue another message", re.I)
+# Kumanda tusu adlari gecen satir kontrol ipucudur ("Zoom LT RT Select Blip")
+_tus = re.compile(r"\b(?:LT|RT|LB|RB|LS|RS)\b.*\b(?:LT|RT|LB|RB|LS|RS)\b|\b(?:Zoom|Move Camera|Select Blip)\b")
+# Gercek cumlelerde bu kucuk kelimeler bol; kamera/kontrol ipuclari ("Zoom LT Move Camera",
+# "Low Detail R Select Blip") ve OCR copunde hic ya da cok az var.
+_baglac = set("""a an the i you he she it we they me him her us them my your his its our their this that
+to of in on at for with from by about as and or but so if not no is are was were be been am do does did
+have has had will would can could should what who where when why how get got go just all there here
+up out""".split())
+MIN_BAGLAC_ORANI = 0.15
 
 
 def _diyalog_mu(satir):
-    if _hud.search(satir) or _etiket.search(satir) or _turkce.search(satir):
+    if _hud.search(satir) or _etiket.search(satir) or _turkce.search(satir) or _pc.search(satir) or _tus.search(satir):
+        return False
+    kelimeler = [k for k in _kelime.findall(satir) if not (len(k) > 1 and k.isupper())]  # "IT", "RT" sayilmaz
+    # "You're" -> "you"
+    if sum(k.lower().split("'")[0] in _baglac for k in kelimeler) < MIN_BAGLAC_ORANI * max(1, len(kelimeler)):
         return False
     buyuk = len(re.findall(r"[A-Z]", satir))
     if buyuk > MAX_BUYUK_ORANI * max(1, len(_harf.findall(satir))):
         return False
     harfler = len(_harf.findall(satir))
-    if harfler < MIN_HARF:
+    cumle = satir.rstrip().endswith((".", "!", "?"))
+    if harfler < (MIN_HARF_CUMLE if cumle else MIN_HARF):
         return False
-    if len(_kelime.findall(satir)) < MIN_KELIME:
+    if len(_kelime.findall(satir)) < (MIN_KELIME_CUMLE if cumle else MIN_KELIME):
         return False
     if not _kucuk.search(satir):  # TAMAMI BUYUK HARF: HUD basliklari
         return False

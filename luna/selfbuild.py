@@ -21,6 +21,14 @@ GEMINI_BEKLE = 1.0  # oyunda Gemini cogunlukla 0,7-1,1 sn; Google ~0,4 sn
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
+# Luna'daki komuta her zaman eklenir. Oyunda gorulen hatalar: "you'd appreciate a call" -> "ararsan memnun olursun"
+# (kim kimi ariyor ters), iki satira bolunen cumlenin ilk yarisinin nokta ile bitirilmesi, sen/siz karisikligi.
+EK_KURAL = (
+    "Address the listener informally (in Turkish always 'sen', never 'siz'). "
+    "Keep who does what to whom exactly as in the original (e.g. receiving a call vs. making one). "
+    "Game subtitles often split one sentence over two lines: if the input does not end with . ! ? or ..., "
+    "translate it as an unfinished fragment that the next line will complete, and do not add a period."
+)
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "altyazi_ceviri.log")
 
 
@@ -86,7 +94,7 @@ class TS(basetrans):
             icerik.append({"role": "model", "parts": [{"text": ceviri}]})
         icerik.append({"role": "user", "parts": [{"text": metin}]})
         govde = {"contents": icerik, "generationConfig": {"temperature": 0.2}}
-        komut = (komut + " " if komut else "") + (
+        komut = (komut + " " if komut else "") + EK_KURAL + " " + (
             "Write only in %s; never use words from any other language." % HEDEF_DIL_ADI)
         govde["systemInstruction"] = {"parts": [{"text": komut}]}
         r = requests.request(
@@ -112,7 +120,8 @@ class TS(basetrans):
         )
         if r.status_code != 200:
             raise _HTTPHata(r.status_code)
-        return "".join(parca[0] for parca in r.json()[0] if parca and parca[0]).strip()
+        metin = "".join(parca[0] for parca in r.json()[0] if parca and parca[0])
+        return metin.replace("​", "").strip()  # Google arada gorunmez bosluk ekliyor ("Prix​​Luxury")
 
     def translate(self, content):
         metin = str(content).strip()
