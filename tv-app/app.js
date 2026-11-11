@@ -47,9 +47,10 @@
     elAltyazi.style.bottom = ayar.altKonum + 'px';
     elAltyazi.style.fontSize = ayar.yaziBoyutu + 'px';
   }
-  // En fazla 2 satir: yeni ceviri altta, bir oncekisi ustte soluk kalir.
-  // Her satir kendi suresi dolunca solup kaybolur.
-  var EN_FAZLA_SATIR = 2;
+  // Yalnizca son ceviri gorunur; yenisi gelince eskisi solup kaybolur.
+  // 2 yapilirsa bir onceki ceviri ustte soluk olarak kalir.
+  // Her satir kendi suresi dolunca da solup kaybolur.
+  var EN_FAZLA_SATIR = 1;
   function satirKaldir(el) {
     if (!el.parentNode) return;
     el.classList.add('sonuyor');
