@@ -107,7 +107,18 @@ ben gireceğim. Bitince Xbox uzaktan oynatma + LunaTranslator + TV uygulamasıyl
 - Özel promt (örnek GTA için):
   > You translate English video game subtitles from Grand Theft Auto into natural, casual Turkish. Output only the Turkish translation, nothing else. Keep it short like a subtitle. Never translate character names, place names, vehicle, weapon or brand names. Keep street slang and swearing in a natural Turkish equivalent. If the input is not a sentence (HUD text, a name, a number), output it unchanged.
 
-Anahtarı **faturalandırması kapalı** bir projede oluştur ki ücretsiz katmanda kal. Sınıra takılınca çevirici 30 sn boyunca otomatik Google'a geçer; hiçbir cümle kaybolmaz.
+Anahtarı **faturalandırması kapalı** bir projede oluştur ki ücretsiz katmanda kal. Sınıra takılınca (429) çevirici 30 sn Gemini'yi denemez; o arada pakette ya da önbellekte olmayan satırlar atlanır (Google'ın uzun, harfiyen çevirisi oyunda okunamadığı için kapalı: `GOOGLE_YEDEK = False`).
+
+### 7. (Önerilen) Oyun çeviri paketi + kalıcı önbellek
+Çevirici her satır için şu sırayla bakar: **önbellek → oyun paketi → Gemini**.
+- **Oyun paketi:** hazır insan çevirisi; pakette olan satır **0 ms**'de gelir, Gemini kotası harcanmaz. GTA V paketi (~190 bin satır; hikâye GTA TR / TechnoGame yamasından, gerisi Claude ile çevrilip gözden geçirilmiş) [CouchSubs](https://github.com/yorulmazsinan/couchsubs) projesinin; bu repoya konmaz (AGPL-3.0, çeviri hakları sahiplerinde), kişisel kullanım için indirilir:
+  ```powershell
+  New-Item -ItemType Directory -Force "$env:USERPROFILE\LunaTranslator\userconfig\paketler"
+  Invoke-WebRequest https://raw.githubusercontent.com/yorulmazsinan/couchsubs/main/core/Sources/CouchSubsCore/Resources/packs/gta-v.json.gz -OutFile "$env:USERPROFILE\LunaTranslator\userconfig\paketler\gta-v.json.gz"
+  ```
+  Eşleşme: satır küçük harfe çevrilip noktalama atılır (`Take out the enemies,` = `Take out the enemies.`); bulunmazsa konuşmacı etiketi (`LESTER: ...`) ayrılıp, sonra cümle cümle denenir. Gerçek oyun günlüğümüzde farklı satırların ~%17'si birebir eşleşti (çoğu görev cümlesi); kalanlar OCR'ın yarım/hatalı okuduğu satırlar.
+- **Kalıcı önbellek** (`userconfig\ceviri_onbellek.jsonl`): Gemini'nin her çevirisi saklanır; tekrar eden satır Luna kapanıp açılsa da anında ve hep aynı çeviriyle gelir. Dosyayı silmek önbelleği sıfırlar.
+- **OCR düzeltmeleri** (`mypost.py`): `l'm` → `I'm`, satırın başına yapışan görev mesafesi (`23m CESARE: ...`) atılır; ikisi de paketin eşleşmesini artırır.
 
 ## Kullanım
 1. Xbox uygulaması → konsol → **Uzaktan oynat** → pencereyi **tam ekran ve en önde** tut (Luna ekranın o bölgesini okur).

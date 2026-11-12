@@ -1,14 +1,16 @@
-# LunaTranslator ozel cevirici (userconfig\selfbuild.py): Gemini ve Google yaristirilir.
-# Luna bunu tek bir cevirici olarak gorur; TV'ye her cumle icin tek ceviri gider.
+# LunaTranslator ozel cevirici (userconfig\selfbuild.py). Luna bunu tek bir cevirici olarak gorur;
+# TV'ye her cumle icin tek ceviri gider. Sira:
+#  1) Kalici onbellek (userconfig\ceviri_onbellek.jsonl): daha once cevrilmis satir aninda, hep ayni ceviri.
+#  2) Oyun paketi (userconfig\paketler\*.json.gz): hazir insan cevirisi, 0 ms, kota harcamaz. Paket bicimi
+#     CouchSubs'inki (github.com/yorulmazsinan/couchsubs, AGPL-3.0; GTA V: GTA TR / TechnoGame yamasi + Claude):
+#     anahtar = normallestirilmis Ingilizce satirin SHA-256'sinin ilk 16 hanesi. Paket repoya konmaz, indirilir.
+#  3) Gemini (GOOGLE_YEDEK=False: yalniz Gemini; GEMINI_TEK_BEKLE icinde donmezse satir atlanir).
 #  - Gemini anahtari girilmemisse yalnizca (ucretsiz) Google kullanilir.
-#  - Cumle ayni anda hem Gemini'ye hem Google'a gonderilir.
-#  - Gemini GEMINI_BEKLE saniye icinde donerse onun cevirisi (daha dogal), donmezse Google'inki kullanilir.
-#    Olculen Gemini gecikmesi 0,6-6,8 sn arasi degisiyor; sirayla beklemek Google'dan bile yavas kaliyordu.
 #  - 429 (istek siniri) sonrasi BEKLEME_SN boyunca Gemini hic denenmez.
 #  - Anahtar, model ve komut Luna'daki "大模型通用接口" (chatgpt-3rd-party) ayarlarindan okunur.
 #  - Her ceviri userconfig\altyazi_ceviri.log dosyasina yazilir (hangi motor, kac ms).
 #  - HTTP icin Luna'nin kendi `requests` modulu kullanilir (gomulu Python'daki urllib HTTPS desteklemiyor).
-import os, threading, time
+import glob, gzip, hashlib, json, os, re, threading, time, unicodedata
 from collections import deque
 import requests
 from translator.basetranslator import basetrans
@@ -29,7 +31,10 @@ GEMINI_TEK_BEKLE = 4.0
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
-ONBELLEK_BOYUT = 2000  # saklanan en fazla ceviri (Luna kapaninca silinir)
+ONBELLEK_BOYUT = 20000  # saklanan en fazla ceviri; diskte kalir (Luna kapanip acilinca da gecerli)
+_KLASOR = os.path.dirname(os.path.abspath(__file__))
+ONBELLEK_DOSYA = os.path.join(_KLASOR, "ceviri_onbellek.jsonl")  # silinirse onbellek sifirlanir
+PAKET_KLASORU = os.path.join(_KLASOR, "paketler")
 # Luna'daki komuta her zaman eklenir. Oyunda gorulen hatalar: "you'd appreciate a call" -> "ararsan memnun olursun"
 # (kim kimi ariyor ters), iki satira bolunen cumlenin ilk yarisinin nokta ile bitirilmesi, sen/siz karisikligi.
 EK_KURAL = (
@@ -94,6 +99,77 @@ def _anahtar(metin):
     return " ".join(metin.lower().split())
 
 
+# ---------------------------------------------------------------- oyun paketleri
+def _kanon(metin):
+    """Paket anahtari icin normallestirme: etiketleri at, kucuk harf, aksanlari sil, harf/rakam disindaki her
+    seyi tek bosluk say. Boylece "Take out the enemies," ile "Take out the enemies." ayni anahtari verir."""
+    metin = re.sub(r"<[^<>]{0,40}>", " ", metin)
+    metin = unicodedata.normalize("NFD", unicodedata.normalize("NFKC", metin).lower())
+    cikti, bosluk = [], False
+    for ch in metin:
+        tur = unicodedata.category(ch)
+        if tur.startswith("M"):
+            continue
+        if tur[0] in "LN":
+            if bosluk and cikti:
+                cikti.append(" ")
+            bosluk = False
+            cikti.append(ch)
+        else:
+            bosluk = True
+    return "".join(cikti)
+
+
+def _paket_anahtari(metin):
+    return hashlib.sha256(_kanon(metin).encode("utf-8")).hexdigest()[:16]
+
+
+_KONUSMACI = re.compile(r"^([A-Z][\w'.\-]*(?:\s+[A-Z][\w'.\-]*){0,2}):\s+(.+)$")
+_CUMLE_SONU = re.compile(r"(?<=[.!?…])\s+(?=[A-Z\"'])")
+
+
+class _Paketler:
+    """paketler\\*.json.gz arka planda yuklenir (GTA V ~0,3 sn); yuklenmeden gelen satirlar Gemini'ye gider."""
+
+    def __init__(self):
+        self.satirlar, self.parcalar, self.hazir = {}, {}, False
+        threading.Thread(target=self._yukle, daemon=True).start()
+
+    def _yukle(self):
+        for yol in sorted(glob.glob(os.path.join(PAKET_KLASORU, "*.json.gz"))):
+            try:
+                with gzip.open(yol, "rt", encoding="utf-8") as f:
+                    d = json.load(f)
+                self.satirlar.update(d.get("entries") or {})
+                self.parcalar.update(d.get("segments") or {})
+            except Exception as e:
+                _gunluk("PAKET HATASI", 0, os.path.basename(yol), repr(e))
+        self.hazir = True
+
+    def _tek(self, metin):
+        k = _paket_anahtari(metin)
+        return self.satirlar.get(k) or self.parcalar.get(k)
+
+    def bul(self, metin):
+        """Tum satir; yoksa konusmaci etiketsiz ("LESTER: ..."); yoksa cumle cumle (hepsi bulunmali)."""
+        if not self.hazir or not metin:
+            return None
+        bulunan = self._tek(metin)
+        if bulunan:
+            return bulunan
+        konusmaci = _KONUSMACI.match(metin)
+        if konusmaci:
+            govde = self.bul(konusmaci.group(2))
+            if govde:
+                return "%s: %s" % (konusmaci.group(1), govde)
+        cumleler = [c for c in _CUMLE_SONU.split(metin.strip()) if c]
+        if len(cumleler) > 1:
+            ceviriler = [self._tek(c) for c in cumleler]
+            if all(ceviriler):
+                return " ".join(ceviriler)
+        return None
+
+
 class TS(basetrans):
     def init(self):
         self.baglam = deque(maxlen=BAGLAM_SAYISI)
@@ -103,12 +179,44 @@ class TS(basetrans):
         # gec gelen cevabi da saklanir; ayni satir bir daha gelirse Google'in hatali/"siz"li cevirisi yerine o gider.
         self.onbellek = {}
         self.kilit = threading.Lock()
+        self.paketler = _Paketler()
+        self._onbellek_yukle()
+
+    def _onbellek_yukle(self):
+        try:
+            with open(ONBELLEK_DOSYA, encoding="utf-8") as f:
+                for satir in f:
+                    try:
+                        anahtar, ceviri = json.loads(satir)
+                        self.onbellek[anahtar] = ceviri
+                    except ValueError:
+                        continue
+        except OSError:
+            return
+        while len(self.onbellek) > ONBELLEK_BOYUT:
+            self.onbellek.pop(next(iter(self.onbellek)))
 
     def _sakla(self, metin, ceviri):
+        anahtar = _anahtar(metin)
         with self.kilit:
-            self.onbellek[_anahtar(metin)] = ceviri
+            yeni = self.onbellek.get(anahtar) != ceviri
+            self.onbellek[anahtar] = ceviri
             while len(self.onbellek) > ONBELLEK_BOYUT:
                 self.onbellek.pop(next(iter(self.onbellek)))
+            if not yeni:
+                return
+            try:
+                if os.path.exists(ONBELLEK_DOSYA) and os.path.getsize(ONBELLEK_DOSYA) > 8 * 1024 * 1024:
+                    # Dosya buyudu: yalniz bellekteki guncel kayitlarla yeniden yaz
+                    with open(ONBELLEK_DOSYA + ".yeni", "w", encoding="utf-8") as f:
+                        for a, c in self.onbellek.items():
+                            f.write(json.dumps([a, c], ensure_ascii=False) + "\n")
+                    os.replace(ONBELLEK_DOSYA + ".yeni", ONBELLEK_DOSYA)
+                else:
+                    with open(ONBELLEK_DOSYA, "a", encoding="utf-8") as f:
+                        f.write(json.dumps([anahtar, ceviri], ensure_ascii=False) + "\n")
+            except OSError:
+                pass
 
     def _gec_gemini_sakla(self, gemini, metin):
         def bekle():
@@ -197,6 +305,11 @@ class TS(basetrans):
             self.baglam.append((metin, hazir))
             _gunluk("onbellek", (time.time() - t0) * 1000, metin, hazir)
             return hazir
+        paketten = self.paketler.bul(metin)
+        if paketten:
+            self.baglam.append((metin, paketten))  # sonraki Gemini cevirisine baglam olur
+            _gunluk("paket", (time.time() - t0) * 1000, metin, paketten)
+            return paketten
         gemini_var = self._gemini_ayar() is not None
         if gemini_var and not GOOGLE_YEDEK:
             return self._yalniz_gemini(metin, t0)

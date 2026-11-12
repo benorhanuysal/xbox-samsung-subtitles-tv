@@ -24,3 +24,5 @@ docs/private/
 # Python onbellegi (yerel yol icerir)
 __pycache__/
 *.pyc
+luna/paketler/
+ceviri_onbellek.jsonl

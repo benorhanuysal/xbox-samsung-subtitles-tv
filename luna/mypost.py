@@ -97,8 +97,20 @@ def _tekrar_mi(metin):
     return tekrar
 
 
+# OCR'in sik hatalari (CouchSubs'in OcrNoise kurallarindan esinlenildi):
+# - buyuk I kucuk l okunur: "l'm", "l'll", tek basina "l"  -> "I"
+# - gorev isaretinin mesafesi satirin basina yapisir: "23m CESARE: Here!" -> "CESARE: Here!"
+#   (yapismazsa _hud tum satiri HUD sanip atiyordu)
+_l_ben = re.compile(r"(?<![A-Za-z'])l(?='(?:m|ll|ve|d)\b|(?![A-Za-z']))")
+_bas_mesafe = re.compile(r"^\s*\d+(?:[.,]\d+)?\s?(?:mi|km|m|ft)\b\s*", re.I)
+
+
+def _ocr_duzelt(satir):
+    return _l_ben.sub("I", _bas_mesafe.sub("", satir))
+
+
 def POSTSOLVE(line):
-    satirlar = [_son_kirinti.sub(r"\1", s.strip()) for s in line.splitlines()]
+    satirlar = [_son_kirinti.sub(r"\1", _ocr_duzelt(s.strip())) for s in line.splitlines()]
     kalan = [s for s in satirlar if s and _diyalog_mu(s)]
     metin = " ".join(kalan)
     if metin and _tekrar_mi(metin):
