@@ -21,6 +21,11 @@ HEDEF_DIL_ADI = "Turkish"  # Gemini'ye "yalnizca bu dilde yaz" kurali icin
 # Turkce satir ekranda bir sonraki satir gelene kadar kalir, yani okuma suresi gecikmeden degil
 # ceviri uzunlugundan etkilenir; Google'in harfiyen cevirisi (4 sn'de ~95 harf) oyunda okunamiyor.
 GEMINI_BEKLE = 1.8
+# False: yalnizca Gemini (Google'in uzun cevirisi hic gosterilmez). Gemini GEMINI_TEK_BEKLE icinde
+# cevap vermezse ya da hata verirse o satir atlanir; gec gelen altyazi zaten bir sonraki satirin ustune biner.
+# Gemini anahtari yoksa yine Google kullanilir (sistem tamamen sessiz kalmasin).
+GOOGLE_YEDEK = False
+GEMINI_TEK_BEKLE = 4.0
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
@@ -157,6 +162,30 @@ class TS(basetrans):
         metin = "".join(parca[0] for parca in r.json()[0] if parca and parca[0])
         return metin.replace("​", "").strip()  # Google arada gorunmez bosluk ekliyor ("Prix​​Luxury")
 
+    def _yalniz_gemini(self, metin, t0):
+        """Google yok: Gemini ya zamaninda doner ya da satir atlanir (bos ceviri TV'ye gitmez)."""
+        if time.time() < self.gemini_kapali_bitis:
+            _gunluk("ATLANDI(429 beklemesi)", 0, metin, "")
+            return ""
+        gemini = _Is(self._gemini, metin)
+        gemini.join(GEMINI_TEK_BEKLE)
+        if gemini.sonuc and _latin_mi(gemini.sonuc):
+            self.baglam.append((metin, gemini.sonuc))
+            self._sakla(metin, gemini.sonuc)
+            _gunluk("gemini", (time.time() - t0) * 1000, metin, gemini.sonuc)
+            return gemini.sonuc
+        if gemini.is_alive():
+            neden = "gecikti"
+            self._gec_gemini_sakla(gemini, metin)  # ayni cumle tekrar gelirse onbellekten aninda
+        elif gemini.sonuc:
+            neden = "yabanci harf"
+        elif isinstance(gemini.hata, _HTTPHata):
+            neden = "HTTP %d" % gemini.hata.kod
+        else:
+            neden = type(gemini.hata).__name__ if gemini.hata else "bos cevap"
+        _gunluk("ATLANDI(%s)" % neden, (time.time() - t0) * 1000, metin, "")
+        return ""
+
     def translate(self, content):
         metin = str(content).strip()
         if not metin:
@@ -169,6 +198,8 @@ class TS(basetrans):
             _gunluk("onbellek", (time.time() - t0) * 1000, metin, hazir)
             return hazir
         gemini_var = self._gemini_ayar() is not None
+        if gemini_var and not GOOGLE_YEDEK:
+            return self._yalniz_gemini(metin, t0)
         gemini = _Is(self._gemini, metin) if gemini_var and time.time() >= self.gemini_kapali_bitis else None
         google = _Is(self._google, metin)
 
