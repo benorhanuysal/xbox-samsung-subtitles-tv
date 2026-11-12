@@ -109,7 +109,27 @@ ben gireceğim. Bitince Xbox uzaktan oynatma + LunaTranslator + TV uygulamasıyl
 
 Anahtarı **faturalandırması kapalı** bir projede oluştur ki ücretsiz katmanda kal. Sınıra takılınca (429) çevirici 30 sn Gemini'yi denemez; o arada pakette ya da önbellekte olmayan satırlar atlanır (Google'ın uzun, harfiyen çevirisi oyunda okunamadığı için kapalı: `GOOGLE_YEDEK = False`).
 
-### 7. (Önerilen) Oyun çeviri paketi + kalıcı önbellek
+### 7. (Önerilen) Altyazı motoru — ekranı biz okuruz
+`motor/motor.py`, Luna'nın ekran okuma döngüsünün yerine geçer. Çeviri, filtre ve TV/OBS yayını Luna'da kalır; TV uygulaması değişmez.
+```
+ekran şeridi ─► gölgeli ön işleme ─► Luna /api/ocr ─► dengeleyici ─► Luna /api/textinput ─► (filtre, paket, önbellek, Gemini) ─► TV, OBS
+```
+- **Gölgeli ön işleme** (`motor/onisleme.py`): Altyazı beyaz yazı ve sağ-aşağıda koyu gölgeden oluşur. Yalnız gölgesi olan açık pikselleri bırakıp "beyaz zemin üstünde siyah yazı" yapar. Plaka, harita, gökyüzü gibi gölgesiz parlak alanlar kendiliğinden elenir.
+- **Dengeleyici** (`motor/dengeleyici.py`): Satırı iki benzer okumadan sonra ya da cümle işaretiyle bitince bir kez gönderir. Ekranda duran satırın kötü yeniden okumasını yok sayar. Satır uzarsa "değiştir" gönderir. 0,8 sn boş okumada satır gitti sayılır; 1,5 sn içinde geri gelirse beklemeden gönderilir.
+- **Ölçüm** (kayıttan 80 sn'lik telefon konuşması, saniyede 4 kare, doğruluk = satırın GTA V paketinde birebir bulunması):
+
+  | | Doğru okunan kare | Çöp/bozuk farklı okuma | Gönderilen satır |
+  |---|---|---|---|
+  | Luna'nın okuması (ham) | %75 | 20 | 15 (3'ü plaka) |
+  | **Motor (gölgeli + dengeleyici)** | **%99** | **2** | **12 / 12 doğru** |
+
+  Aynı bölümde 12 satırın 12'si paketten 0 ms'de çevrildi; Luna'nın kendi okumasıyla bu oran gerçek oyun günlüğünde %17'ydi.
+- Yalnız Xbox uzaktan oynatma sesi akarken okur. Oyun yokken masaüstündeki koyu zemin + beyaz yazılar (kod editörü vb.) TV'ye gitmez.
+- Kurulum: `pip install numpy pillow mss pycaw`. Luna kapalıyken `python motor\motor.py --luna-ocr kapat` (Luna'nın kendi okuması kapanır, yoksa TV'ye iki akış gider). Eski düzene dönmek için `--luna-ocr ac`. Okuma bölgesi `motor\motor_ayar.json`'da (`"bolge": [x, y, genişlik, yükseklik]`, 4K fiziksel piksel), günlük `motor\motor.log`.
+- Kayıttan deneme (oyun açmadan): `python motor\motor.py --video kayit.mkv --bas 160 --sure 60 --olcek 1 --kuru`.
+- GTA 6 için: Yöntem altyazının gölgeli beyaz yazı olmasına dayanır (Rockstar stili). Farklı çıkarsa `motor_ayar.json`'da `"on_isleme": "ham"` ile eski okumaya dönülür.
+
+### 8. (Önerilen) Oyun çeviri paketi + kalıcı önbellek
 Çevirici her satır için şu sırayla bakar: **önbellek → oyun paketi → Gemini**.
 - **Oyun paketi:** hazır insan çevirisi; pakette olan satır **0 ms**'de gelir, Gemini kotası harcanmaz. GTA V paketi (~190 bin satır; hikâye GTA TR / TechnoGame yamasından, gerisi Claude ile çevrilip gözden geçirilmiş) [CouchSubs](https://github.com/yorulmazsinan/couchsubs) projesinin; bu repoya konmaz (AGPL-3.0, çeviri hakları sahiplerinde), kişisel kullanım için indirilir:
   ```powershell
