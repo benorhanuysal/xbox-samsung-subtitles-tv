@@ -66,7 +66,39 @@ def _diyalog_mu(satir):
     return dolu and harfler / dolu >= MIN_HARF_ORANI
 
 
+# Cumle sonuna yapisan kisa BUYUK harf kirintisi ("... other players. EVE"): arka plandaki tabela/HUD
+_son_kirinti = re.compile(r"([.!?])\s+[A-Z\-]{1,5}$")
+
+# Ayni altyazi ekranda dururken OCR her 0.3 sn'de biraz farkli okur ("plavers"/"players"); her okuma
+# ayri ceviri olarak TV'ye gidince altyazi titrer. Bu sure icinde benzer metin tekrar gonderilmez.
+TEKRAR_SN = 8
+BENZERLIK = 0.75
+# Kismen okunmus satirin tamami gelirse (belirgin uzunsa) yine gonderilir
+UZAMA = 1.25
+_son = {"metin": "", "zaman": 0.0}
+
+
+def _sade(metin):
+    return re.sub(r"[^a-z]", "", metin.lower())
+
+
+def _tekrar_mi(metin):
+    import time
+    from difflib import SequenceMatcher
+    simdi = time.time()
+    a, b = _sade(_son["metin"]), _sade(metin)
+    tekrar = (simdi - _son["zaman"] < TEKRAR_SN and a and b and len(b) < UZAMA * len(a)
+              and SequenceMatcher(None, a, b).ratio() >= BENZERLIK)
+    if not tekrar:
+        _son["metin"] = metin
+    _son["zaman"] = simdi  # ekranda durdukca sure uzar
+    return tekrar
+
+
 def POSTSOLVE(line):
-    satirlar = [s.strip() for s in line.splitlines()]
+    satirlar = [_son_kirinti.sub(r"\1", s.strip()) for s in line.splitlines()]
     kalan = [s for s in satirlar if s and _diyalog_mu(s)]
-    return " ".join(kalan)
+    metin = " ".join(kalan)
+    if metin and _tekrar_mi(metin):
+        return ""
+    return metin
