@@ -200,7 +200,12 @@ if (Adim 'luna') {
     Tamam 'Luna ayarlari: OCR, filtre, ozel cevirici, ag servisi (2333)'
 
     $anahtar = Read-Host '  Gemini API anahtari (istege bagli; bos = yalnizca Google)' -AsSecureString
-    $anahtar = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($anahtar))
+    $anahtar = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($anahtar)).Trim()
+    if ($anahtar -and $anahtar.Length -lt 20) {
+        # Yanlislikla basilan tus (anahtar yerine tek karakter) Gemini'yi sessizce bozuyordu
+        Uyari "Bu bir Gemini anahtari degil ($($anahtar.Length) karakter); Gemini ayarlanmadi. Anahtar AQ. ya da AIza ile baslar."
+        $anahtar = ''
+    }
     if ($anahtar) {
         $ts = JsonOku (Join-Path $uc 'translatorsetting.json')
         $a = AltNesne (AltNesne $ts 'chatgpt-3rd-party') 'args'

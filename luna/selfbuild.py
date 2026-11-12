@@ -17,7 +17,10 @@ from myutils.config import translatorsetting
 KAYNAK_DIL = "en"
 HEDEF_DIL = "tr"
 HEDEF_DIL_ADI = "Turkish"  # Gemini'ye "yalnizca bu dilde yaz" kurali icin
-GEMINI_BEKLE = 1.0  # oyunda Gemini cogunlukla 0,7-1,1 sn; Google ~0,4 sn
+# Oyunda Gemini cogunlukla 0,7-1,5 sn; Google ~0,4 sn. Biraz fazla beklemek okunabilirligi artirir:
+# Turkce satir ekranda bir sonraki satir gelene kadar kalir, yani okuma suresi gecikmeden degil
+# ceviri uzunlugundan etkilenir; Google'in harfiyen cevirisi (4 sn'de ~95 harf) oyunda okunamiyor.
+GEMINI_BEKLE = 1.8
 GOOGLE_ZAMAN_ASIMI = 5.0
 BEKLEME_SN = 30
 BAGLAM_SAYISI = 3
@@ -25,6 +28,9 @@ ONBELLEK_BOYUT = 2000  # saklanan en fazla ceviri (Luna kapaninca silinir)
 # Luna'daki komuta her zaman eklenir. Oyunda gorulen hatalar: "you'd appreciate a call" -> "ararsan memnun olursun"
 # (kim kimi ariyor ters), iki satira bolunen cumlenin ilk yarisinin nokta ile bitirilmesi, sen/siz karisikligi.
 EK_KURAL = (
+    "This is a live subtitle the player reads in a few seconds while playing, so keep it SHORT: never longer "
+    "than the English line, usually shorter. Drop filler and padding (uh, listen, you know, well, personally, "
+    "I believe) and keep only the point and the tone. "
     "Address the listener informally (in Turkish always 'sen', never 'siz'). "
     "Keep who does what to whom exactly as in the original (e.g. receiving a call vs. making one). "
     "Game subtitles often split one sentence over two lines: if the input does not end with . ! ? or ..., "
