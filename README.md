@@ -109,11 +109,16 @@ ben gireceğim. Bitince Xbox uzaktan oynatma + LunaTranslator + TV uygulamasıyl
 
 Anahtarı **faturalandırması kapalı** bir projede oluştur ki ücretsiz katmanda kal. Sınıra takılınca (429) çevirici 30 sn Gemini'yi denemez; o arada pakette ya da önbellekte olmayan satırlar atlanır (Google'ın uzun, harfiyen çevirisi oyunda okunamadığı için kapalı: `GOOGLE_YEDEK = False`).
 
-### 7. (Önerilen) Altyazı motoru — ekranı biz okuruz
-`motor/motor.py`, Luna'nın ekran okuma döngüsünün yerine geçer. Çeviri, filtre ve TV/OBS yayını Luna'da kalır; TV uygulaması değişmez.
+### 7. (Önerilen) Altyazı motoru — ekranı biz okuruz, Türkçe İngilizcenin üstüne
+`motor/motor.py` ekranı okur ve TV ile OBS'e yayın yapar (WebSocket **:2333**). Luna arka planda **:2335**'te OCR ve çeviri servisi olarak kalır (filtre, önbellek, oyun paketi, Gemini).
 ```
-ekran şeridi ─► gölgeli ön işleme ─► Luna /api/ocr ─► dengeleyici ─► Luna /api/textinput ─► (filtre, paket, önbellek, Gemini) ─► TV, OBS
+her bölge ─► ön işleme ─► Luna /api/ocr (satır kutularıyla) ─► dengeleyici ─► Luna /api/translate ─► :2333
+                                                                                   /api/ws/olay  → Türkçe + İngilizcenin ekrandaki kutusu
+                                                                                   /api/ws/text/trans → eski biçim (düz metin)
 ```
+- **İki bölge:** alttaki altyazı (gölgeli ön işleme) ve sol üstteki görev/ipucu kutusu (ham okuma: kutudaki yazının gölgesi yok, gölgeli ön işleme onu bozuyordu).
+- **Kapak görünümü:** TV uygulaması ve OBS katmanı Türkçeyi İngilizcenin **tam üstüne, tam siyah zeminle** yazar; İngilizce görünmez. Türkçe uzunsa yazı kutuya sığacak kadar küçülür. Altyazının Türkçesi İngilizce gittikten sonra da okuma süresi (2 sn + harf başına 60 ms, en çok 6 sn) dolana kadar kalır. İpucu kutusununki, kutu kapanınca hemen kaybolur. Yazı normal kalınlıkta (Noto Sans 400).
+- **Eski uygulamalar:** `/api/ws/text/trans` Luna ile aynı biçimde düz metin verir. Güncellenmemiş TV uygulaması değişmeden çalışır; TV uygulaması motor yoksa kendiliğinden bu adrese döner.
 - **Gölgeli ön işleme** (`motor/onisleme.py`): Altyazı beyaz yazı ve sağ-aşağıda koyu gölgeden oluşur. Yalnız gölgesi olan açık pikselleri bırakıp "beyaz zemin üstünde siyah yazı" yapar. Plaka, harita, gökyüzü gibi gölgesiz parlak alanlar kendiliğinden elenir.
 - **Dengeleyici** (`motor/dengeleyici.py`): Satırı iki benzer okumadan sonra ya da cümle işaretiyle bitince bir kez gönderir. Ekranda duran satırın kötü yeniden okumasını yok sayar. Satır uzarsa "değiştir" gönderir. 0,8 sn boş okumada satır gitti sayılır; 1,5 sn içinde geri gelirse beklemeden gönderilir.
 - **Ölçüm** (kayıttan 80 sn'lik telefon konuşması, saniyede 4 kare, doğruluk = satırın GTA V paketinde birebir bulunması):
@@ -125,9 +130,9 @@ ekran şeridi ─► gölgeli ön işleme ─► Luna /api/ocr ─► dengeleyic
 
   Aynı bölümde 12 satırın 12'si paketten 0 ms'de çevrildi; Luna'nın kendi okumasıyla bu oran gerçek oyun günlüğünde %17'ydi.
 - Yalnız Xbox uzaktan oynatma sesi akarken okur. Oyun yokken masaüstündeki koyu zemin + beyaz yazılar (kod editörü vb.) TV'ye gitmez.
-- Kurulum: `pip install numpy pillow mss pycaw`. Luna kapalıyken `python motor\motor.py --luna-ocr kapat` (Luna'nın kendi okuması kapanır, yoksa TV'ye iki akış gider). Eski düzene dönmek için `--luna-ocr ac`. Okuma bölgesi `motor\motor_ayar.json`'da (`"bolge": [x, y, genişlik, yükseklik]`, 4K fiziksel piksel), günlük `motor\motor.log`.
-- Kayıttan deneme (oyun açmadan): `python motor\motor.py --video kayit.mkv --bas 160 --sure 60 --olcek 1 --kuru`.
-- GTA 6 için: Yöntem altyazının gölgeli beyaz yazı olmasına dayanır (Rockstar stili). Farklı çıkarsa `motor_ayar.json`'da `"on_isleme": "ham"` ile eski okumaya dönülür.
+- Kurulum: `pip install numpy pillow mss pycaw websockets`. Luna kapalıyken `python motor\motor.py --luna-kur`: Luna'nın kendi okuması kapanır ve yayını 2335'e taşınır (2333 motorun; güvenlik duvarı izni de 2333'e verilmiş). Eski düzene dönmek için `--luna-geri`. Bölgeler `motor\motor_ayar.json`'da: `{"bolgeler": {"alt": {"kutu": [x, y, genişlik, yükseklik]}, "ipucu": {...}}}` (4K fiziksel piksel). Günlük `motor\motor.log`.
+- Kayıttan deneme (oyun açmadan): `python motor\motor.py --video kayit.mkv --bas 160 --sure 60 --kuru`. Elle bir satır: `http://PC:2333/api/textinput?text=...`.
+- GTA 6 için: Altyazı okuması, yazının gölgeli beyaz olmasına dayanır (Rockstar stili). Farklı çıkarsa bölgenin `"on_isleme"`'si `"ham"` yapılır.
 
 ### 8. (Önerilen) Oyun çeviri paketi + kalıcı önbellek
 Çevirici her satır için şu sırayla bakar: **önbellek → oyun paketi → Gemini**.

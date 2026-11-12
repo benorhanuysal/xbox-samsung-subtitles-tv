@@ -1,6 +1,16 @@
 /* Noto Sans (SIL OFL 1.1, fonts/OFL.txt) uygulamaya gomulu: TV'nin kendi fontunda
    s, g, i (noktasiz) gibi Turkce harfler yoksa baska fonttan gelip bozuk gorunuyordu. */
 @font-face {
+  font-family: "Altyazi"; font-weight: 400;
+  src: url("fonts/noto-sans-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
+}
+@font-face {
+  font-family: "Altyazi"; font-weight: 400;
+  src: url("fonts/noto-sans-latin-ext-400.woff2") format("woff2");
+  unicode-range: U+0100-0130, U+0132-024F, U+1E00-1EFF;
+}
+@font-face {
   font-family: "Altyazi"; font-weight: 600;
   src: url("fonts/noto-sans-latin-600.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212;
@@ -31,6 +41,16 @@ html, body {
 }
 
 .gizli { display: none !important; }
+
+/* Kapak: Turkce, oyundaki Ingilizce yazinin tam ustunde (alt altyazi ve sol ust ipucu kutusu).
+   Zemin tam siyah: yari saydamda alttaki Ingilizce silik de olsa okunuyordu. Normal kalinlik (400). */
+.kapak {
+  position: absolute; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  background: #000; border-radius: 6px; padding: 6px 14px;
+  color: #fff; font-weight: 400; line-height: 1.22; text-align: center;
+}
+.kapak.ipucu { text-align: left; justify-content: flex-start; align-items: flex-start; }
 
 #altyazi {
   position: absolute;

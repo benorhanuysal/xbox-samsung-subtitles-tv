@@ -75,8 +75,9 @@ _son_kirinti = re.compile(r"([.!?])\s+[A-Z\-]{1,5}$")
 # ayri ceviri olarak TV'ye gidince altyazi titrer. Bu sure icinde benzer metin tekrar gonderilmez.
 TEKRAR_SN = 8
 BENZERLIK = 0.75
-# Kismen okunmus satirin tamami gelirse (belirgin uzunsa) yine gonderilir
-UZAMA = 1.25
+# Kismen okunmus satirin tamami gelirse (belirgin uzunsa) yine gonderilir. Motorun dengeleyicisiyle ayni esik
+# (motor/dengeleyici.py BUYUME): motorun "satir buyudu" diye gonderdigini burada tekrar sanip atmayalim
+UZAMA = 1.15
 _son = {"metin": "", "zaman": 0.0}
 
 

@@ -70,4 +70,14 @@ def seviye(rgb, olcek=1.0):
     return np.repeat((255 - gri)[..., None], 3, axis=2)  # ters: koyu yazi acik zemin
 
 
+def parlak_maske(rgb):
+    """Ham okunan bolgelerde (ipucu kutusu) "yazi var mi / degisti mi" icin: acik ve renksiz pikseller.
+    OCR'a bu maske degil, ham goruntu gider."""
+    rgb16 = rgb.astype(np.int16)
+    en_az, en_cok = rgb16.min(axis=2), rgb16.max(axis=2)
+    return (en_az >= 160) & (en_cok - en_az <= 50)
+
+
 ON_ISLEMELER = {"ham": lambda rgb, olcek=1.0: rgb, "beyaz": beyaz, "golgeli": golgeli, "seviye": seviye}
+# Bu on islemelerin ciktisi zaten "beyaz zemin ustunde siyah yazi": maske ciktidan okunur
+IKILI = {"beyaz", "golgeli"}
