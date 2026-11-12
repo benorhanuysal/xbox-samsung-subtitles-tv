@@ -42,7 +42,8 @@ def _gunluk(motor, ms, kaynak, sonuc):
         if os.path.exists(LOG) and os.path.getsize(LOG) > 512 * 1024:
             os.replace(LOG, LOG + ".1")
         with open(LOG, "a", encoding="utf-8") as f:
-            f.write("%s\t%s\t%dms\t%s\t=> %s\n" % (time.strftime("%H:%M:%S"), motor, ms, kaynak, sonuc))
+            # Tarihli zaman: video kaydiyla (xbox-auto-youtube) eslesmesi icin
+            f.write("%s\t%s\t%dms\t%s\t=> %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), motor, ms, kaynak, sonuc))
     except Exception:
         pass
 
