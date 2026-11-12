@@ -24,8 +24,9 @@ $PROFIL   = 'AltyaziTV'
 $APPID    = 'AltyzTV001.AltyaziTV'
 $TIZEN_URL  = 'https://download.tizen.org/sdk/Installer/tizen-sdk_10.0/web-cli_Tizen_SDK_10.0_windows-64.exe'
 $LUNA_API   = 'https://api.github.com/repos/HIllya51/LunaTranslator/releases/latest'
-# GTA V altyazi seridi (1920x1080'de 260,878 1400x168); ekran cozunurlugune gore olceklenir
-$BOLGE_ORAN = @(0.135, 0.813, 0.729, 0.156)
+# GTA V altyazi seridi (1920x1080'de 455,878 999x168); ekran cozunurlugune gore olceklenir.
+# Daha genis tutulursa sag alttaki tus ipuclari (Respawn, Passive Mode) ve sol ustteki yardim kutusu karisir.
+$BOLGE_ORAN = @(0.237, 0.813, 0.520, 0.156)
 $GEMINI_PROMPT = 'You translate English video game subtitles from Grand Theft Auto into natural, casual Turkish. Output only the Turkish translation, nothing else. Keep it short like a subtitle. Never translate character names, place names, vehicle, weapon or brand names. Keep street slang and swearing in a natural Turkish equivalent. If the input is not a sentence (HUD text, a name, a number), output it unchanged.'
 # Turkce Windows'ta Java "WINDOWS" kelimesini "wındows" yapiyor; Tizen araclari bu yuzden cokuyor.
 $env:JAVA_TOOL_OPTIONS = '-Duser.language=en -Duser.country=US'

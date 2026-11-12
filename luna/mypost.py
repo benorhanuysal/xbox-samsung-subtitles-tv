@@ -24,9 +24,15 @@ _turkce = re.compile(r"[ğĞışŞİ]")
 # Harflerin cogu BUYUK ise tabela/baslik ("CASINO & RESORT", "... INVITED")
 MAX_BUYUK_ORANI = 0.5
 # PC'deki baska pencerelerin yazilari (okuma bolgesinin ustune gelirse)
-_pc = re.compile(r"ctrl\s*esc|unfocus|Queue another message", re.I)
+_pc = re.compile(r"ctrl\s*esc|unfocus|Queue another message|Ask Claude to edit|Thought for \d+s|Esc to cancel", re.I)
 # Kumanda tusu adlari gecen satir kontrol ipucudur ("Zoom LT RT Select Blip")
 _tus = re.compile(r"\b(?:LT|RT|LB|RB|LS|RS)\b.*\b(?:LT|RT|LB|RB|LS|RS)\b|\b(?:Zoom|Move Camera|Select Blip)\b")
+# Olum/menu ekranindaki kontrol ipuclari ("Passive Mode  Y  Respawn  A  Start ...")
+# OCR kelimeleri bitistirir/bozar ("VRespawn", "Besnawn", "Dassive Mode"): kelime siniri aranmaz
+_ipucu = re.compile(r"s[pn]awn|[PD]assive Mode|Spectate|Quick Restart|Quick GPS", re.I)
+# Tus simgeleri OCR'da tek basina BUYUK harf olarak okunur (Y, V, B, R...). Ingilizcede tek basina
+# duran buyuk harf yalnizca "I" ve "A". Kucuk harfe bakilmaz: OCR kesme isaretini kacirinca "it s" olur.
+_tek_harf = re.compile(r"(?<![A-Za-z'\-])[B-HJ-Z](?![A-Za-z'\-])")
 # Gercek cumlelerde bu kucuk kelimeler bol; kamera/kontrol ipuclari ("Zoom LT Move Camera",
 # "Low Detail R Select Blip") ve OCR copunde hic ya da cok az var.
 _baglac = set("""a an the i you he she it we they me him her us them my your his its our their this that
@@ -38,6 +44,8 @@ MIN_BAGLAC_ORANI = 0.15
 
 def _diyalog_mu(satir):
     if _hud.search(satir) or _etiket.search(satir) or _turkce.search(satir) or _pc.search(satir) or _tus.search(satir):
+        return False
+    if _ipucu.search(satir) or _tek_harf.search(satir):
         return False
     kelimeler = [k for k in _kelime.findall(satir) if not (len(k) > 1 and k.isupper())]  # "IT", "RT" sayilmaz
     # "You're" -> "you"
