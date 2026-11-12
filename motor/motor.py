@@ -37,8 +37,9 @@ from dengeleyici import Dengeleyici  # noqa: E402
 AYAR_DOSYASI = os.path.join(KLASOR, "motor_ayar.json")  # git'e girmez (ekran koordinatlari)
 VARSAYILAN = {
     # 4K ekranda okuma bolgesi [x, y, genislik, yukseklik] (fiziksel piksel). Luna'nin bolgesinden ~45 px
-    # asagi uzatildi: iki satirli altyazinin alt satiri eski bolgenin sinirina tasiyordu.
-    "bolge": [771, 1689, 2241, 370],
+    # asagi uzatildi (iki satirli altyazinin alt satiri eski bolgenin sinirina tasiyordu); sol kenar 40 px
+    # saga alindi (mini haritanin sag kenarindaki beyaz noktalar satir basina ": " diye yapisiyordu).
+    "bolge": [811, 1689, 2201, 370],
     "aralik_sn": 0.25,
     "luna": "http://127.0.0.1:2333",
     "on_isleme": "golgeli",
