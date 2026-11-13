@@ -14,17 +14,21 @@
 Xbox Series X/S ──HDMI──► Samsung TV (Tizen)
       │                     └─ Altyazı TV uygulaması
       │                          • HDMI görüntüsü tam ekran, uygulamanın ARKASINDA (tvwindow)
-      │                          • Türkçe altyazıyı İngilizcenin hemen üstüne yazar
-      │                                    ▲  WebSocket (yerel ağ)
+      │                          • Türkçeyi İngilizcenin TAM ÜSTÜNE, siyah zeminle yazar
+      │                            (alttaki altyazı + sol üstteki görev/ipucu kutusu)
+      │                                    ▲  WebSocket :2333 (yerel ağ)
       └─ Xbox uygulaması "Uzaktan oynat" ──► Windows PC
-                                            └─ LunaTranslator
-                                               • Windows 11 OCR ile altyazı şeridini okur (~70 ms)
-                                               • altyazı filtresi: plaka, tabela, HUD yazılarını atar
-                                               • çeviri: Gemini + Google yarışır (≤1 sn)
-                                               • ws://PC_IP:2333/api/ws/text/trans
+                                            ├─ Altyazı motoru (motor/)
+                                            │  • ekranı okur: gölgeli ön işleme (yalnız gölgeli beyaz yazı)
+                                            │  • dengeleyici: her satır bir kez, titreşimsiz
+                                            │  • İngilizcenin ekrandaki yerini bilir
+                                            └─ LunaTranslator (arka plan servisi, :2335)
+                                               • Snipping Tool OCR (~70–200 ms)
+                                               • filtre: plaka, tabela, HUD, tuş ipuçları
+                                               • çeviri: önbellek → oyun paketi (0 ms) → Gemini
 ```
 
-Altyazı oyundaki İngilizceden yaklaşık **1–2 saniye** sonra TV'ye gelir.
+Altyazı oyundaki İngilizceden yaklaşık **1–2 saniye** sonra TV'ye gelir; oyun paketinde olan satırlar daha hızlı. Motor olmadan klasik düzen de çalışır (Luna ekranı kendisi okur, Türkçe ekranın altına yazılır).
 
 ## Gerekenler
 
@@ -210,7 +214,11 @@ Teşekkürler: [LunaTranslator](https://github.com/HIllya51/LunaTranslator) (OCR
 
 ## English
 
-**Live translated subtitles for Xbox games on a Samsung (Tizen) TV.** You play directly on the TV over HDMI with zero added latency. The PC reads the game's English subtitles through Xbox Remote Play using LunaTranslator (Windows 11 OCR), translates them (Gemini and Google Translate race; the first good result within 1 s wins), and streams the text over a local WebSocket to a small Tizen web app. The app shows the HDMI input full-screen *behind* itself (`tizen.tvwindow`, `BEHIND`) and draws the translation just above the game's own subtitle. Tested with GTA V on Xbox Series X and a 2021 Samsung QN90A; built with GTA VI in mind. Translation target is Turkish by default; change `KAYNAK_DIL` / `HEDEF_DIL` / `HEDEF_DIL_ADI` in `luna/selfbuild.py` for other languages.
+**Live translated subtitles for Xbox games on a Samsung (Tizen) TV.** You play directly on the TV over HDMI with zero added latency. The PC reads the game's English text through Xbox Remote Play, translates it and streams it over a local WebSocket to a small Tizen web app. The app shows the HDMI input full-screen *behind* itself (`tizen.tvwindow`, `BEHIND`) and draws the translation **exactly over the English text on a solid black box** — both the subtitles and the top-left objective/help box. Tested with GTA V on Xbox Series X and a 2021 Samsung QN90A; built with GTA VI in mind. Translation target is Turkish by default; change `KAYNAK_DIL` / `HEDEF_DIL` / `HEDEF_DIL_ADI` in `luna/selfbuild.py` for other languages.
+
+**Subtitle engine (`motor/`, recommended):** captures the screen regions itself, keeps only bright text that has a dark drop shadow (GTA's subtitle style) so plates, signs and sky are dropped, OCRs through LunaTranslator's local `/api/ocr` (Snipping Tool OCR), and runs a frame-based stabilizer (send a line once after two similar reads or at sentence end, ignore worse re-reads, re-send when a line grows, clear after 0.8 s of empty reads). Measured on an 80 s recorded phone call: correctly read frames 75 % → 99 %, garbage reads 20 → 2, 12/12 lines sent exactly once. It translates via LunaTranslator's `/api/translate` (cache → game pack → Gemini) and serves `ws://PC:2333/api/ws/olay` (JSON with the on-screen box of the English text) plus the legacy plain-text `/api/ws/text/trans`. Setup: `pip install numpy pillow mss pycaw websockets`, then with LunaTranslator closed `python motor\motor.py --luna-kur`.
+
+**Game pack + persistent cache:** lines found in a pre-translated game pack are shown in 0 ms with a human translation (GTA V pack from [CouchSubs](https://github.com/yorulmazsinan/couchsubs), AGPL-3.0 — downloaded separately, not included here); every Gemini translation is cached on disk.
 
 **Quick setup:** download the repo and run **`KUR.bat`** — it installs the Tizen SDK and Samsung certificate extension, downloads and fully configures LunaTranslator, adds the firewall rule, connects to the TV, opens Certificate Manager and deploys the app. You only enable Developer Mode on the TV, approve Windows prompts and sign in to your Samsung account. Re-running is safe (finished steps are skipped). With an AI coding assistant, paste the prompt from the Turkish section above.
 
