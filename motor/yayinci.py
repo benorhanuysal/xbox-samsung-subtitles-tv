@@ -41,6 +41,12 @@ class Yayinci:
 
     def _http(self, baglanti, istek):
         yol = urlsplit(istek.path)
+        if yol.path == "/api/merhaba":
+            # TV uygulamasi PC'nin IP'si degisince agi tarayip motoru bununla bulur (WebSocket denemeleri
+            # tarayicida kisiliyor, duz HTTP istegi kisilmiyor). Baska kaynaktan (TV uygulamasi) okunabilsin.
+            yanit = baglanti.respond(200, "altyazi-motoru\n")
+            yanit.headers["Access-Control-Allow-Origin"] = "*"
+            return yanit
         if yol.path == "/api/textinput":
             metin = parse_qs(yol.query).get("text", [""])[0]
             if metin and self.girdi:

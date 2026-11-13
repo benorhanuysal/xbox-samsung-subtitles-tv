@@ -198,31 +198,94 @@
   }
   function baglan() {
     clearTimeout(yenidenZaman);
+    if (aramada) return;  // PC aramasi bitince kendisi baglanir
     if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
     if (!ayar.ip) { durum('PC IP adresi girilmedi - KIRMIZI tusa bas', true); return; }
     var yol = kip === 'olay' ? '/api/ws/olay' : '/api/ws/text/trans';
     var url = 'ws://' + ayar.ip + ':' + ayar.port + yol;
-    var acildi = false;
+    var acildi = false, soket;
     durum('Baglaniyor: ' + ayar.ip + ':' + ayar.port, true);
-    try { ws = new WebSocket(url); } catch (e) { yenidenDene(); return; }
-    ws.onopen = function () {
+    try { soket = ws = new WebSocket(url); } catch (e) { yenidenDene(); return; }
+    // Kimsenin olmadigi IP'ye baglanma denemesi tarayicida 20 sn'den uzun asili kalabiliyor.
+    // Yalniz BU denemeyi kapat (global ws o sirada yeni bir deneme olabilir).
+    var acilisSiniri = setTimeout(function () { if (!acildi) { try { soket.close(); } catch (e) {} } }, 4000);
+    soket.onopen = function () {
+      clearTimeout(acilisSiniri);
       acildi = true; bekleme = 1000; basarisiz = 0;
       durum(kip === 'olay' ? 'Altyazi motoruna baglandi ✓' : 'PC\'ye baglandi ✓ (eski bicim)');
     };
-    ws.onmessage = function (ev) {
+    soket.onmessage = function (ev) {
       if (kip === 'olay') { olayIsle(ev.data); return; }
       var m = mesajdanMetin(ev.data);
       if (m && m !== sonMetin) { sonMetin = m; altyaziGoster(m); }
     };
-    ws.onerror = function () { /* onclose ele alir */ };
-    ws.onclose = function () {
-      if (!acildi && ++basarisiz >= 2) { kip = kip === 'olay' ? 'eski' : 'olay'; basarisiz = 0; bekleme = 1000; }
+    soket.onerror = function () { /* onclose ele alir */ };
+    soket.onclose = function () {
+      clearTimeout(acilisSiniri);
+      if (soket !== ws) return;  // eski bir denemenin gec gelen kapanisi
+      if (!acildi && ++basarisiz >= 2) {
+        if (kip === 'eski') { pcAra(); return; }  // iki adres de olmadi: PC'nin IP'si degismis olabilir
+        kip = 'eski'; basarisiz = 0; bekleme = 1000;
+      }
       durum('Baglanti yok, tekrar deneniyor...', true);
       yenidenDene();
     };
   }
+
+  // ---------- PC'yi kendiliginden bulma ----------
+  // Modem PC'ye her zaman ayni IP'yi vermiyor (or. .104 -> .109); kayitli IP cevap vermezse ayni agdaki
+  // adresler denenir, motorun /api/merhaba adresine "altyazi-motoru" diye cevap veren ilk adres kaydedilir.
+  // Kumandayla IP girmek gerekmez. WebSocket degil duz HTTP: tarayici basarisiz WebSocket denemelerinden sonra
+  // yenilerini bekletiyor (Chromium kisma), 254 adreslik taramada dogru adres bile zaman asimina dusuyordu.
+  // Eski IP'nin yakinindan baslanir: modem genelde yakin bir adres verir.
+  var aramada = false, sonArama = 0;
+  function pcAra() {
+    if (aramada) return;
+    var parca = (ayar.ip || '').split('.');
+    // PC kapaliyken her birkac saniyede 254 adres taranmasin: basarisiz aramadan sonra 1 dk bekle
+    if (parca.length !== 4 || Date.now() - sonArama < 60000) { kip = 'olay'; basarisiz = 0; yenidenDene(); return; }
+    sonArama = Date.now();
+    aramada = true;
+    var ag = parca.slice(0, 3).join('.') + '.';
+    durum('PC araniyor: ' + ag + '* ...', true);
+    var adaylar = [], bulundu = false, i, eski = parseInt(parca[3], 10) || 0;
+    for (i = 1; i < 255; i++) adaylar.push(i);
+    adaylar.sort(function (a, b) { return Math.abs(a - eski) - Math.abs(b - eski); });
+    for (i = 0; i < adaylar.length; i++) adaylar[i] = ag + adaylar[i];
+    function dene(ip, bitti) {
+      var istek = new XMLHttpRequest(), bitirildi = false;
+      function son() { if (!bitirildi) { bitirildi = true; bitti(); } }
+      try {
+        istek.open('GET', 'http://' + ip + ':' + ayar.port + '/api/merhaba', true);
+        istek.timeout = 1500;
+        istek.onload = function () {
+          if (!bulundu && istek.status === 200 && String(istek.responseText).indexOf('altyazi-motoru') === 0) {
+            bulundu = true; aramada = false;
+            ayar.ip = ip; kaydet();
+            kip = 'olay'; basarisiz = 0; bekleme = 1000;
+            durum('PC bulundu: ' + ip, true);
+            baglan();
+          }
+          son();
+        };
+        istek.onerror = istek.ontimeout = istek.onabort = son;
+        istek.send();
+      } catch (e) { son(); }
+    }
+    // TV tarayicisini bogmamak icin 32'lik gruplar
+    function grup(bas) {
+      if (bulundu) return;
+      if (bas >= adaylar.length) { aramada = false; kip = 'olay'; basarisiz = 0; yenidenDene(); return; }
+      var kalan = Math.min(32, adaylar.length - bas);
+      for (var j = bas; j < bas + 32 && j < adaylar.length; j++) {
+        dene(adaylar[j], function () { if (--kalan === 0) grup(bas + 32); });
+      }
+    }
+    grup(0);
+  }
   function yenidenDene() {
     clearTimeout(yenidenZaman);
+    if (aramada) return;
     yenidenZaman = setTimeout(baglan, bekleme);
     bekleme = Math.min(bekleme * 2, 15000);
   }
