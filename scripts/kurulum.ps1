@@ -37,6 +37,10 @@ function Tamam($t)  { Write-Host "  [OK] $t" -ForegroundColor Green }
 function Uyari($t)  { Write-Host "  [!] $t" -ForegroundColor Yellow }
 function Dur($t)    { Write-Host "  [HATA] $t" -ForegroundColor Red; Read-Host '  Cikmak icin Enter'; exit 1 }
 function Adim($ad)  { $Adimlar -contains $ad }
+# Windows PowerShell 5.1'de yerel programin hata akisina yazdigi her satir ($ErrorActionPreference='Stop' altinda)
+# betigi durdurur: Java'nin "Picked up JAVA_TOOL_OPTIONS" bilgisi, sdb'nin "baglanamadi" mesaji (tekrar dene
+# dongusune hic gelinmiyordu). Cikti cmd icinde birlestirilip metin olarak doner.
+function Yerel([string]$komut) { & cmd /c "$komut 2>&1" | Out-String }
 
 function JsonOku($yol) {
     if (Test-Path $yol) { return ([IO.File]::ReadAllText($yol, [Text.Encoding]::UTF8) | ConvertFrom-Json) }
@@ -116,7 +120,7 @@ if (Adim 'eklenti') {
         Push-Location "$TZ\package-manager"
         foreach ($paket in 'cert-add-on', 'Certificate-Manager') {
             Bilgi "Kuruluyor: $paket"
-            & "$jdk\bin\java.exe" -jar PackageManagerV2-cli.jar install --accept-license $paket 2>&1 | Out-Null
+            Yerel "`"$jdk\bin\java.exe`" -jar PackageManagerV2-cli.jar install --accept-license $paket" | Out-Null
             # "Installation has been failed" deyip dosyalari yine de acabiliyor; asagida kontrol ediliyor
         }
         Pop-Location
@@ -241,8 +245,8 @@ if (Adim 'tv') {
     Read-Host '  Hazir olunca Enter' | Out-Null
     $tvIp = TvIp
     for ($i = 0; ; $i++) {
-        & $SDB connect $tvIp 2>&1 | Out-Null
-        if ((& $SDB devices 2>&1 | Out-String) -match [regex]::Escape($tvIp)) { Tamam "TV bagli: $tvIp"; break }
+        Yerel "`"$SDB`" connect $tvIp" | Out-Null
+        if ((Yerel "`"$SDB`" devices") -match [regex]::Escape($tvIp)) { Tamam "TV bagli: $tvIp"; break }
         Uyari "TV'ye baglanilamadi ($tvIp). TV acik mi, gelistirici modu ve Host PC IP dogru mu, ayni agda misiniz?"
         $yeni = (Read-Host '  Tekrar denemek icin Enter, IP degistiyse yeni IP, cikmak icin q').Trim()
         if ($yeni -eq 'q') { exit 1 }
@@ -271,7 +275,7 @@ if (Adim 'sertifika') {
 # ---------------------------------------------------------------- 8. Derle, imzala, TV'ye yukle
 if (Adim 'yukle') {
     Baslik "8/8 TV uygulamasini yukle"
-    if (-not $tvIp) { $tvIp = TvIp; & $SDB connect $tvIp 2>&1 | Out-Null }
+    if (-not $tvIp) { $tvIp = TvIp; Yerel "`"$SDB`" connect $tvIp" | Out-Null }
     $proje = Join-Path $Depo 'tv-app'
     $sonuc = Join-Path $proje '.buildResult'
     if (Test-Path $sonuc) { Remove-Item $sonuc -Recurse -Force }
