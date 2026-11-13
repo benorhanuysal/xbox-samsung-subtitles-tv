@@ -200,7 +200,11 @@
     clearTimeout(yenidenZaman);
     if (aramada) return;  // PC aramasi bitince kendisi baglanir
     if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
-    if (!ayar.ip) { durum('PC IP adresi girilmedi - KIRMIZI tusa bas', true); return; }
+    if (!ayar.ip) {
+      // Ilk kurulum: kayitli IP yok. TV'nin agini biliyorsak PC'yi orada ara, bilmiyorsak kumandayla girilsin.
+      if (tvIp) pcAra(); else durum('PC IP adresi girilmedi - KIRMIZI tusa bas', true);
+      return;
+    }
     var yol = kip === 'olay' ? '/api/ws/olay' : '/api/ws/text/trans';
     var url = 'ws://' + ayar.ip + ':' + ayar.port + yol;
     var acildi = false, soket;
@@ -237,18 +241,40 @@
   // adresler denenir, motorun /api/merhaba adresine "altyazi-motoru" diye cevap veren ilk adres kaydedilir.
   // Kumandayla IP girmek gerekmez. WebSocket degil duz HTTP: tarayici basarisiz WebSocket denemelerinden sonra
   // yenilerini bekletiyor (Chromium kisma), 254 adreslik taramada dogru adres bile zaman asimina dusuyordu.
-  // Eski IP'nin yakinindan baslanir: modem genelde yakin bir adres verir.
-  var aramada = false, sonArama = 0;
+  // Eski IP'nin yakinindan baslanir: modem genelde yakin bir adres verir. PC, TV ile ayni agda olmak zorunda:
+  // TV'nin kendi IP'si biliniyorsa onun agi taranir (ilk kurulumda kayitli IP yok; ev agi degistiyse eski IP
+  // baska bir agda kalmistir).
+  var aramada = false, sonArama = 0, tvIp = '';
+  function tvIpOgren(geri) {
+    var bitti = false;
+    function son(ip) { if (!bitti) { bitti = true; geri(ip && ip !== '0.0.0.0' ? ip : ''); } }
+    function wifi() {
+      try { tizen.systeminfo.getPropertyValue('WIFI_NETWORK', function (w) { son(w && w.ipAddress); }, function () { son(''); }); }
+      catch (e) { son(''); }
+    }
+    setTimeout(function () { son(''); }, 3000);
+    try {
+      tizen.systeminfo.getPropertyValue('ETHERNET_NETWORK', function (e) {
+        if (e && e.ipAddress && e.ipAddress !== '0.0.0.0') son(e.ipAddress); else wifi();
+      }, wifi);
+    } catch (e) { wifi(); }
+  }
   function pcAra() {
     if (aramada) return;
-    var parca = (ayar.ip || '').split('.');
+    var taban = (tvIp || ayar.ip || '').split('.');
     // PC kapaliyken her birkac saniyede 254 adres taranmasin: basarisiz aramadan sonra 1 dk bekle
-    if (parca.length !== 4 || Date.now() - sonArama < 60000) { kip = 'olay'; basarisiz = 0; yenidenDene(); return; }
+    if (taban.length !== 4 || Date.now() - sonArama < 60000) {
+      kip = 'olay'; basarisiz = 0;
+      if (ayar.ip || tvIp) yenidenDene(); else ayarAc();
+      return;
+    }
     sonArama = Date.now();
     aramada = true;
-    var ag = parca.slice(0, 3).join('.') + '.';
-    durum('PC araniyor: ' + ag + '* ...', true);
-    var adaylar = [], bulundu = false, i, eski = parseInt(parca[3], 10) || 0;
+    var ag = taban.slice(0, 3).join('.') + '.';
+    durum('PC araniyor: ' + ag + '* ...' + (ayar.ip ? '' : '  (KIRMIZI: IP elle gir)'), true);
+    // Kayitli IP ayni agdaysa onun yakinindan, degilse TV'nin yakinindan basla
+    var merkez = ayar.ip && ayar.ip.indexOf(ag) === 0 ? ayar.ip.split('.') : taban;
+    var adaylar = [], bulundu = false, i, eski = parseInt(merkez[3], 10) || 0;
     for (i = 1; i < 255; i++) adaylar.push(i);
     adaylar.sort(function (a, b) { return Math.abs(a - eski) - Math.abs(b - eski); });
     for (i = 0; i < adaylar.length; i++) adaylar[i] = ag + adaylar[i];
@@ -363,6 +389,9 @@
     tuslariKaydet();
     hdmiBaslat();
     yardimGoster();
-    if (ayar.ip) baglan(); else ayarAc();
+    tvIpOgren(function (ip) {
+      tvIp = ip;
+      if (ayar.ip || tvIp) baglan(); else ayarAc();
+    });
   });
 })();

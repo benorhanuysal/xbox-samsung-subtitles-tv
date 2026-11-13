@@ -152,7 +152,7 @@ her bölge ─► ön işleme ─► Luna /api/ocr (satır kutularıyla) ─► 
 ## Kullanım
 1. Xbox uygulaması → konsol → **Uzaktan oynat** → pencereyi **tam ekran ve en önde** tut (Luna ekranın o bölgesini okur).
 2. LunaTranslator'ı aç.
-3. TV'de **Altyazı TV**'yi aç → ilk açılışta **KIRMIZI** → PC IP'sini gir (nokta için OK) → KIRMIZI ile kaydet.
+3. TV'de **Altyazı TV**'yi aç. Uygulama TV'nin ağında altyazı motorunu çalıştıran PC'yi **kendisi bulur** (ilk kurulumda da, PC'nin IP'si değişince de). Bulamazsa **KIRMIZI** → PC IP'sini gir (nokta için OK) → KIRMIZI ile kaydet.
 4. Oyun kumandasını (controller) **PC'ye** bağlayıp oyna; uzaktan oynatma kontrolü PC'ye alır. Görüntüyü TV'den, HDMI'dan gecikmesiz izle.
 
 | Kumanda | İşlev |
@@ -222,6 +222,6 @@ Teşekkürler: [LunaTranslator](https://github.com/HIllya51/LunaTranslator) (OCR
 
 **Quick setup:** download the repo and run **`KUR.bat`** — it installs the Tizen SDK and Samsung certificate extension, downloads and fully configures LunaTranslator, adds the firewall rule, connects to the TV, opens Certificate Manager and deploys the app. You only enable Developer Mode on the TV, approve Windows prompts and sign in to your Samsung account. Re-running is safe (finished steps are skipped). With an AI coding assistant, paste the prompt from the Turkish section above.
 
-Manual setup in short: enable TV Developer Mode → install Tizen SDK CLI + Samsung Certificate Extension → create a **Samsung** certificate profile named `AltyaziTV` (on non-English Windows, launch Certificate Manager with `-Duser.language=en`; `scripts\2_tv_bagla_ve_sertifika.bat` does this) → `scripts\3_paketle_ve_tvye_yukle.bat` → copy `luna/*.py` into LunaTranslator's `userconfig` and configure LunaTranslator as in the table above (OCR: SnippingTool, 0.3 s period, Custom Python Processing on, Custom Translation as the only translator, Network Service on port 2333) → allow TCP 2333 in Windows Firewall → open the app on the TV and enter the PC's IP with the RED button.
+Manual setup in short: enable TV Developer Mode → install Tizen SDK CLI + Samsung Certificate Extension → create a **Samsung** certificate profile named `AltyaziTV` (on non-English Windows, launch Certificate Manager with `-Duser.language=en`; `scripts\2_tv_bagla_ve_sertifika.bat` does this) → `scripts\3_paketle_ve_tvye_yukle.bat` → copy `luna/*.py` into LunaTranslator's `userconfig` and configure LunaTranslator as in the table above (OCR: SnippingTool, 0.3 s period, Custom Python Processing on, Custom Translation as the only translator, Network Service on port 2333) → allow TCP 2333 in Windows Firewall → open the app on the TV: it finds the PC running the subtitle engine on its own network by itself (RED button = enter the IP manually if it can't).
 
 Not affiliated with Microsoft, Samsung, Rockstar Games or LunaTranslator. MIT licensed.

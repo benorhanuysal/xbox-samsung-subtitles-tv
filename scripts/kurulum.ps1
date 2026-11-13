@@ -295,7 +295,7 @@ if (Adim 'yukle') {
 Baslik 'Bitti'
 Bilgi '1. Xbox uygulamasi > konsol > Uzaktan oynat > pencereyi TAM EKRAN ve EN ONDE tut.'
 Bilgi '2. LunaTranslator''i ac.'
-Bilgi '3. TV''de Altyazi TV ilk acilista ayar ekrani: PC IP''sini gir (nokta icin OK), KIRMIZI ile kaydet:'
+Bilgi '3. TV''de Altyazi TV PC''yi agda kendisi bulur. Bulamazsa KIRMIZI > PC IP''sini gir (nokta icin OK) > KIRMIZI ile kaydet:'
 PcIpleri | ForEach-Object { Write-Host "      $_" -ForegroundColor White }
 Bilgi '4. Oyun kumandasini PC''ye bagla; goruntuyu TV''den izle.'
 Read-Host '  Kapatmak icin Enter' | Out-Null
